@@ -1,0 +1,21 @@
+name: probe
+on:
+  pull_request:
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+    steps:
+      - name: publish one check run per conclusion
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          for c in success neutral skipped failure action_required cancelled timed_out; do
+            gh api "repos/${GITHUB_REPOSITORY}/check-runs" \
+              -f name="probe-$c" -f head_sha="$SHA" \
+              -f status=completed -f conclusion="$c" \
+              -f output[title]="probe $c" -f output[summary]="measurement fixture" \
+              --jq '.name + " " + .conclusion'
+          done
